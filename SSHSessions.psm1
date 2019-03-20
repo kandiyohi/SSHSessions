@@ -1,6 +1,19 @@
 #requires -version 3
 
 
+# Various TODOs:
+#
+#   - Make the primary key for an SSH session to be the username and computer
+#     name.  This way different accounts can connect simultaneously.
+#   - Redo how the global for the SSH sessions works.  We should store a good
+#     session object that we can reference and only remove the credentials
+#     from.
+#   - Put expect-like semantics in (pseudo-tty stuff) so we can also elevate
+#     using sudo properly.
+#   - Test SSH keyfile usage.  For my current usecase, they aren't important,
+#     but it would be a boon to support them.
+
+
 <#
 .SYNOPSIS
     A set of functions for dealing with SSH connections from PowerShell, using the SSH.NET
@@ -113,7 +126,7 @@ function New-SshSession {
                 }
             }
             elseif ($Global:SshSessions.ContainsKey($Computer) -and $Global:SshSessions.$Computer.IsConnected) {
-                Write-Verbose -Message "[$Computer] You are already connected." -Verbose
+                Write-Warning -Message "A session for $Computer already exists."
                 continue
             }
             try {
@@ -138,6 +151,7 @@ function New-SshSession {
             if ($SshClient -and $SshClient.IsConnected) {
                 Write-Verbose -Message "[$Computer] Successfully connected."
                 $Global:SshSessions.$Computer = $SshClient
+                # Print connection info once created
                 Get-SshSession -ComputerName $Computer
             }
             else {
