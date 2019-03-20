@@ -92,7 +92,7 @@ function New-SshSession {
             }
         }
         else {
-            $Key = $false
+            $Key = $null
         }
     }
     process {
