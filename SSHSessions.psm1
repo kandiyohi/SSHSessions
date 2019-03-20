@@ -32,8 +32,6 @@
 #>
 
 
-# Function to convert a secure string to a plain text password.
-# See http://www.powershelladmin.com/wiki/Powershell_prompt_for_password_convert_securestring_to_plain_text
 function New-SshSession {
     <#
     .SYNOPSIS
@@ -53,22 +51,14 @@ function New-SshSession {
     .PARAMETER ComputerName
         Required. DNS names or IP addresses for target hosts to establish
         a connection to using the provided username and key/password.
-    .PARAMETER Username
-        Required. The username used for connecting. See also -Credential.
     .PARAMETER KeyFile
         Optional. Specify the path to a private key file for authenticating.
         Overrides a specified password.
-    .PARAMETER KeyPass
-        Optional plain text password for the SSH key you use.
     .PARAMETER KeyCredential
         Optional PSCredentials object (help Get-Credential) with the key file password
         in the password field.
     .PARAMETER Credential
-        Cannot be used with -Username and -Password. PSCredentials object containing a username
-        and an encrypted password.
-    .PARAMETER Password
-        Optional. You can specify a key (and key password), or leave out the password(s)
-        to be prompted for a password which is typed in interactively (will not be displayed).
+        PSCredentials object containing a username and an encrypted password.
     .PARAMETER Port
         Optional. Default 22. Target port the SSH server uses.
     #>
