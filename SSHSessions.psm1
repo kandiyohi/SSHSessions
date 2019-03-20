@@ -182,6 +182,7 @@ function Invoke-SshCommand {
         [Parameter(Mandatory,ParameterSetName="String",Position=1)]
         [String]$Command
         # TODO: Make reconnects happen.
+        # TODO: Support expect-like constructs (e.g. for sudo).
     )
     begin {
     }
