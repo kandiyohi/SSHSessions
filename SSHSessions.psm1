@@ -183,9 +183,6 @@ function Invoke-SshCommand {
     .PARAMETER ScriptBlock
         Required unless you use -Command. The Linux command to run on specified target computers.
         More convenient than a string for complex nested quotes, etc.
-    .PARAMETER Quiet
-        Causes no colored output to be written by Write-Host. If you assign results to a
-        variable, no progress indication will be shown.
     .PARAMETER InvokeOnAll
         Invoke the specified command on all computers for which you have an open connection.
         Overrides -ComputerName, but you will be asked politely if you want to continue,
@@ -244,17 +241,6 @@ function Invoke-SshCommand {
                 $Command = $ScriptBlock.ToString()
             }
             $CommandObject = $Global:SshSessions.$Computer.RunCommand($Command)
-            # Write "pretty", colored results with Write-Host unless the quiet switch is provided.
-            if (-not $Quiet) {
-                if ($CommandObject.ExitStatus -eq 0) {
-                    Write-Host -Fore Green -NoNewline "[${Computer}] "
-                    Write-Host -Fore Cyan ($CommandObject.Result -replace '[\r\n]+\z', '')
-                }
-                else {
-                    Write-Host -Fore Green -NoNewline "[${Computer}] "
-                    Write-Host -Fore Yellow 'had an error:' ($CommandObject.Error -replace '[\r\n]+', ' ')
-                }
-            }
             # Now emit to the pipeline
             # 2018-01-01: Super breaking change! Emit the entire $CommandObject for easier ways to play with the
             # properties. ... Changed my mind, but will return objects, which is equally breaking.
