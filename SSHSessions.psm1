@@ -68,9 +68,13 @@ function New-SshSession {
         [String[]]$ComputerName,
         [Parameter(ValueFromPipelineByPropertyName)]
         [String]$KeyFile,
+        [Parameter(ValueFromPipelineByPropertyName)]
         [PSCredential]$KeyCredential,
+        [Parameter(ValueFromPipelineByPropertyName)]
         [PSCredential]$Credential=[PSCredential]::Empty,
+        [Parameter(ValueFromPipelineByPropertyName)]
         [Int32]$Port=22,
+        [Parameter(ValueFromPipelineByPropertyName)]
         [Switch]$Reconnect
     )
 
