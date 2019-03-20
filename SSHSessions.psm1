@@ -34,19 +34,6 @@
 
 # Function to convert a secure string to a plain text password.
 # See http://www.powershelladmin.com/wiki/Powershell_prompt_for_password_convert_securestring_to_plain_text
-function ConvertFrom-SecureToPlain {
-    param(
-        [Parameter(Mandatory=$true)][System.Security.SecureString] $SecurePassword)
-    # Create a "password pointer"
-    $PasswordPointer = [Runtime.InteropServices.Marshal]::SecureStringToBSTR($SecurePassword)
-    # Get the plain text version of the password
-    $Private:PlainTextPassword = [Runtime.InteropServices.Marshal]::PtrToStringAuto($PasswordPointer)
-    # Free the pointer
-    [Runtime.InteropServices.Marshal]::ZeroFreeBSTR($PasswordPointer)
-    # Return the plain text password
-    $Private:PlainTextPassword
-}
-
 function New-SshSession {
     <#
     .SYNOPSIS
@@ -92,19 +79,13 @@ function New-SshSession {
                    ValueFromPipelineByPropertyName = $true)]
             [Alias('Cn', 'IPAddress', 'Hostname', 'Name', 'PSComputerName')]
             [String[]] $ComputerName,
-        [String] $Username = '',
         [String] $KeyFile = '',
-        [String] $KeyPass = 'SvendsenTechDefault', # allow for blank password
-        
         [System.Management.Automation.PSCredential]
         [System.Management.Automation.Credential()]
         $KeyCredential = [System.Management.Automation.PSCredential]::Empty,
-        
         [System.Management.Automation.PSCredential]
         [System.Management.Automation.Credential()]
         $Credential = [System.Management.Automation.PSCredential]::Empty,
-        
-        [String] $Password = 'SvendsenTechDefault', # I guess allowing for a blank password is "wise"...
         [Int32] $Port = 22,
         [Switch] $Reconnect)
     begin {
@@ -133,28 +114,6 @@ function New-SshSession {
         }
         else {
             $Key = $false
-        }
-        # We're going to build a complete credentials object regardless of how credentials are supplied, and
-        # keep the prompting feature some people might have grown to like. I could have used parameter sets here, I guess.
-        if ($Credential.Username -and ($Username -or $Password -cne 'SvendsenTechDefault')) {
-            Write-Error -Message "You specified both a credentials object and a username and/or password. I don't know which set to use. Leave one of them out." -ErrorAction Stop
-            break
-        }
-        if ($Username -ne '') {
-            #-and )) {
-            # We know we can't have both a username and a "$Credential.Username", but we want a $Credential object.
-            if (-not $Key) {
-                if ($Password -ceq 'SvendsenTechDefault') {
-                    $SecurePassword = Read-Host -AsSecureString -Prompt "No key or password provided. Enter SSH password for $Username (press enter for blank)"
-                }
-                else {
-                    $SecurePassword = ConvertTo-SecureString -String $Password -AsPlainText -Force
-                }
-            }
-            if ($Key -and $KeyPass -ceq 'SvendsenTechDefault') {
-                $SecurePassword = ConvertTo-SecureString -String "doh" -AsPlainText -Force # for keys with no password
-            }
-            $Credential = New-Object -TypeName System.Management.Automation.PSCredential -ArgumentList $Username, $SecurePassword
         }
     }
     process {
@@ -550,4 +509,4 @@ $MyEAP = 'Stop'
 $ErrorActionPreference = $MyEAP
 $Global:SshSessions = @{}
 #Export-ModuleMember New-SshSession, Invoke-SshCommand, Enter-SshSession, `
-#                    Remove-SshSession, Get-SshSession, ConvertFrom-SecureToPlain
+#                    Remove-SshSession, Get-SshSession
