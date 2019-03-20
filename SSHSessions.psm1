@@ -67,7 +67,7 @@ function New-SshSession {
         [Parameter(Mandatory,ValueFromPipeline,ValueFromPipelineByPropertyName)]
         [String[]]$ComputerName,
         [Parameter(ValueFromPipelineByPropertyName)]
-        [String]$KeyFile = '',
+        [String]$KeyFile,
         [PSCredential]$KeyCredential,
         [PSCredential]$Credential=[PSCredential]::Empty,
         [Int32]$Port=22,
@@ -75,7 +75,7 @@ function New-SshSession {
     )
 
     begin {
-        if ($KeyFile -ne '') {
+        if ($KeyFile) {
             Write-Verbose -Message "Key file specified. Will override password. Trying to read key file..."
             # TODO: Test this and fix it.  I'm sure it broke when I removed plain text credentials.
             if (Test-Path -PathType Leaf -Path $Keyfile) {
