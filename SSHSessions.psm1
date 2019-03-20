@@ -74,20 +74,16 @@ function New-SshSession {
     #>
     [CmdletBinding()]
     param(
-        [Parameter(Mandatory = $true,
-                   ValueFromPipeline = $true,
-                   ValueFromPipelineByPropertyName = $true)]
-            [Alias('Cn', 'IPAddress', 'Hostname', 'Name', 'PSComputerName')]
-            [String[]] $ComputerName,
-        [String] $KeyFile = '',
-        [System.Management.Automation.PSCredential]
-        [System.Management.Automation.Credential()]
-        $KeyCredential = [System.Management.Automation.PSCredential]::Empty,
-        [System.Management.Automation.PSCredential]
-        [System.Management.Automation.Credential()]
-        $Credential = [System.Management.Automation.PSCredential]::Empty,
-        [Int32] $Port = 22,
-        [Switch] $Reconnect)
+        [Parameter(Mandatory,ValueFromPipeline,ValueFromPipelineByPropertyName)]
+        [String[]]$ComputerName,
+        [Parameter(ValueFromPipelineByPropertyName)]
+        [String]$KeyFile = '',
+        [PSCredential]$KeyCredential=[PSCredential]::Empty,
+        [PSCredential]$Credential=[PSCredential]::Empty,
+        [Int32]$Port=22,
+        [Switch]$Reconnect
+    )
+
     begin {
         if ($KeyFile -ne '') {
             Write-Verbose -Message "Key file specified. Will override password. Trying to read key file..."
@@ -208,29 +204,19 @@ function Invoke-SshCommand {
         Overrides -ComputerName, but you will be asked politely if you want to continue,
         if you specify both parameters.
     #>
-    [CmdletBinding(
-        DefaultParameterSetName = "String"
-    )]
+    [CmdletBinding(DefaultParameterSetName = "String")]
     param(
-        [Parameter(ValueFromPipeline = $true,
-            ValueFromPipelineByPropertyName = $true,
-            Position = 0
-        )]
-        [Alias('Cn', 'IPAddress', 'Hostname', 'Name', 'PSComputerName')]
-        [String[]] $ComputerName, # can't have it mandatory due to -InvokeOnAll...
-    
-        [Parameter(Mandatory = $true,
-            ParameterSetName="String",
-            Position = 1)]
-        [String] $Command,
-
-        [Parameter(Mandatory = $True,
-            ParameterSetName="ScriptBlock",
-            Position = 1)]
-        [ScriptBlock] $ScriptBlock,
-
-        [Switch] $Quiet,
-        [Switch] $InvokeOnAll)
+        [Parameter(ValueFromPipeline,ValueFromPipelineByPropertyName,Position=0)]
+        [String[]]$ComputerName, # can't have it mandatory due to -InvokeOnAll...
+        [Parameter(Mandatory,ParameterSetName="String",Position=1)]
+        [String]$Command,
+        [Parameter(Mandatory,ParameterSetName="ScriptBlock",Position=1)]
+        [ScriptBlock]$ScriptBlock,
+        [Parameter()]
+        [Switch]$Quiet,
+        [Parameter()]
+        [Switch]$InvokeOnAll
+    )
     begin {
         $WtfSkipFlag = $False
         if ($InvokeOnAll) {
@@ -335,8 +321,12 @@ function Enter-SshSession {
     .PARAMETER NoPwd
         Optional. Do not try to include the default remote working directory in the prompt.
     #>
-    param([Parameter(Mandatory=$true)] [Alias('Name', 'IPAddress', 'Cn', 'PSComputerName')] [string] $ComputerName,
-            [switch] $NoPwd)
+    param(
+        [Parameter(Mandatory)]
+        [string]$ComputerName,
+        [Parameter()]
+        [switch] $NoPwd
+    )
     if (-not $Global:SshSessions.ContainsKey($ComputerName)) {
         Write-Error -Message "[$Computer] No SSH session found. See Get-Help New-SshSession. Skipping." `
             -ErrorAction Stop
@@ -397,10 +387,13 @@ function Remove-SshSession {
         if you specify both.
     #>
     [CmdletBinding()]
-    param([Parameter(ValueFromPipeline = $true, ValueFromPipelineByPropertyName = $true)]
-              [Alias('Cn', 'IPAddress', 'Hostname', 'Name', 'PSComputerName')]
-              [String[]] $ComputerName, # can't have it mandatory due to -RemoveAll
-          [Switch]   $RemoveAll)
+    param(
+        [Parameter(ValueFromPipeline,ValueFromPipelineByPropertyName)]
+        # TODO: Make a wildcard parameter.
+        [String[]]$ComputerName, # can't have it mandatory due to -RemoveAll
+        # TODO: Remove when previous is wildcard parameter.
+        [Switch]$RemoveAll
+    )
     begin {
         if ($RemoveAll) {
             if ($ComputerName) {
@@ -468,7 +461,9 @@ function Get-SshSession {
     #>
     
     [CmdletBinding()]
-    param([Alias('Cn', 'IPAddress', 'Hostname', 'Name', 'PSComputerName')] [string[]] $ComputerName)
+    param(
+        [string[]]$ComputerName
+    )
     
     begin {
         # Just exit with a message if there aren't any connections.
