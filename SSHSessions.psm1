@@ -68,7 +68,7 @@ function New-SshSession {
         [String[]]$ComputerName,
         [Parameter(ValueFromPipelineByPropertyName)]
         [String]$KeyFile = '',
-        [PSCredential]$KeyCredential=[PSCredential]::Empty,
+        [PSCredential]$KeyCredential,
         [PSCredential]$Credential=[PSCredential]::Empty,
         [Int32]$Port=22,
         [Switch]$Reconnect
@@ -77,20 +77,13 @@ function New-SshSession {
     begin {
         if ($KeyFile -ne '') {
             Write-Verbose -Message "Key file specified. Will override password. Trying to read key file..."
-            if ($KeyPass -cne 'SvendsenTechDefault' -and $KeyCredential.Password -match '\S') {
-                Write-Error -Message "You can't use both -KeyPass and -KeyCredential (which one do I use?). Leave one out."
-                break
-            }
+            # TODO: Test this and fix it.  I'm sure it broke when I removed plain text credentials.
             if (Test-Path -PathType Leaf -Path $Keyfile) {
-                if ($KeyPass -cne "SvendsenTechDefault") {
-                    $Key = New-Object -TypeName Renci.SshNet.PrivateKeyFile -ArgumentList $KeyFile, $KeyPass -ErrorAction Stop
-                }
-                elseif ($KeyCredential.Password -notmatch '\S') {
+                if (-not $KeyCredential) {
                     $Key = New-Object -TypeName Renci.SshNet.PrivateKeyFile -ArgumentList $Keyfile -ErrorAction Stop
                 }
                 else {
-                    $Key = New-Object -TypeName Renci.SshNet.PrivateKeyFile -ArgumentList $Keyfile,
-                        $KeyCredential.GetNetworkCredential().Password -ErrorAction Stop
+                    $Key = New-Object -TypeName Renci.SshNet.PrivateKeyFile -ArgumentList $Keyfile,$KeyCredential.GetNetworkCredential().Password -ErrorAction Stop
                 }
             }
             else {
