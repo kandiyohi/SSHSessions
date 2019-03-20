@@ -170,63 +170,23 @@ function Invoke-SshCommand {
         $Result there would be either a System.String if you target a single host or a
         System.Array containing strings if you target multiple hosts.
 
-        If you do not specify -Quiet, you will also get colored Write-Host output - mostly
-        for the sake of displaying progress.
-
-        Use -InvokeOnAll to invoke on all hosts to which you have opened connections.
-        The hosts will be processed in alphabetically sorted order.
-
     .PARAMETER ComputerName
         Target hosts to invoke command on.
     .PARAMETER Command
         Required unless you use -ScriptBlock. The Linux command to run on specified target computers.
-    .PARAMETER ScriptBlock
-        Required unless you use -Command. The Linux command to run on specified target computers.
-        More convenient than a string for complex nested quotes, etc.
-    .PARAMETER InvokeOnAll
-        Invoke the specified command on all computers for which you have an open connection.
-        Overrides -ComputerName, but you will be asked politely if you want to continue,
-        if you specify both parameters.
     #>
     [CmdletBinding(DefaultParameterSetName = "String")]
     param(
-        [Parameter(ValueFromPipeline,ValueFromPipelineByPropertyName,Position=0)]
-        [String[]]$ComputerName, # can't have it mandatory due to -InvokeOnAll...
+        [Parameter(Mandatory,ValueFromPipeline,ValueFromPipelineByPropertyName,Position=0)]
+        [String[]]$ComputerName,
         [Parameter(Mandatory,ParameterSetName="String",Position=1)]
-        [String]$Command,
-        [Parameter(Mandatory,ParameterSetName="ScriptBlock",Position=1)]
-        [ScriptBlock]$ScriptBlock,
-        [Parameter()]
-        [Switch]$Quiet,
-        [Parameter()]
-        [Switch]$InvokeOnAll
+        [String]$Command
+        # TODO: Make reconnects happen.
     )
     begin {
-        $WtfSkipFlag = $False
-        if ($InvokeOnAll) {
-            if ($ComputerName) {
-                $Answer = Read-Host -Prompt "You specified both -InvokeOnAll and -ComputerName. -InvokeOnAll overrides and targets all hosts.`nAre you sure you want to continue? (y/n) [yes]"
-                if ($Answer -imatch 'n') {
-                    Write-Warning -Message "Aborting."
-                    break
-                }
-            }
-            if ($Global:SshSessions.Keys.Count -eq 0) {
-                Write-Warning -Message "-InvokeOnAll specified, but no hosts found. See Get-Help New-SshSession."
-                # Remove the below 'break' so calling scripts don't terminate unwantedly. Done in v2.1.3.
-                # $ComputerName will be empty below so it doesn't really matter and then we avoid the unwanted calling
-                # script termination.
-                #break
-            }
-            # Get all computer names from the global SshSessions hashtable.
-            $ComputerName = $Global:SshSessions.Keys | Sort-Object -Property @{ Expression = {
-                # Intent: Sort IP addresses correctly.
-                [Regex]::Replace($_, '(\d+)', { '{0:D16}' -f [int] $args[0].Value }) }
-            }, @{ Expression = { $_ } }
-        }
     }
     process {
-        ,@(foreach ($Computer in $ComputerName) {
+        foreach ($Computer in $ComputerName) {
             if (-not $Global:SshSessions.ContainsKey($Computer)) {
                 #Write-Verbose -Message "No SSH session found for $Computer. See Get-Help New-SshSession. Skipping."
                 Write-Warning -Message "[$Computer] No SSH session found. See Get-Help New-SshSession. Skipping."
@@ -237,39 +197,21 @@ function Invoke-SshCommand {
                 Write-Warning -Message "[$Computer] You are no longer connected. Skipping."
                 continue
             }
-            if ($PSCmdlet.ParameterSetName -eq "ScriptBlock") {
-                $Command = $ScriptBlock.ToString()
-            }
             $CommandObject = $Global:SshSessions.$Computer.RunCommand($Command)
-            # Now emit to the pipeline
-            # 2018-01-01: Super breaking change! Emit the entire $CommandObject for easier ways to play with the
-            # properties. ... Changed my mind, but will return objects, which is equally breaking.
-            #$CommandObject
-            
-            if ($CommandObject.ExitStatus -eq 0) {
-                # Emit results to the pipeline. Twice the fun unless you're assigning the results to a variable.
-                # Changed from .Trim(). Remove the trailing carriage returns and newlines that might be there,
-                # in case leading whitespace matters in later processing. Not sure I should even be doing this.
-                [PSCustomObject] @{
-                    ComputerName = $Computer
-                    Result = $CommandObject.Result -replace '[\r\n]+\z'
-                    Error = $False
-                }
+
+            $Properties = @{
+                ComputerName=$Computer
+                Result=($CommandObject.Result -replace '[\r\n]+\z')
+                ExitStatus=$CommandObject.ExitStatus
             }
-            else {
-                # Same comment as above applies ...
-                #$CommandObject.Error -replace '[\r\n]+\z', ''
-                #New-Object -TypeName PSObject -Property @{
-                [PSCustomObject] @{
-                    ComputerName = $Computer
-                    Result = $CommandObject.Error -replace '[\r\n]+\z'
-                    Error = $True
-                } # | Select-Object -Property ComputerName, Result, Error
+            New-Object -Type PSObject -Property $Properties | Select-Object ComputerName,Result,ExitStatus
+            if ($Properties["ExitStatus"] -ne 0) {
+                Write-Warning "Error occurred with command for $Computer."
             }
-            #>
+
             $CommandObject.Dispose()
             $CommandObject = $Null
-        })
+        }
     }
     end {
         [System.GC]::Collect()
