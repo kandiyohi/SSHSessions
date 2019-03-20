@@ -155,6 +155,7 @@ function New-SshSession {
             if ($SshClient -and $SshClient.IsConnected) {
                 Write-Verbose -Message "[$Computer] Successfully connected."
                 $Global:SshSessions.$Computer = $SshClient
+                Get-SshSession -ComputerName $Computer
             }
             else {
                 Write-Warning -Message "[$Computer] Unable to connect."
